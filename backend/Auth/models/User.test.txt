@@ -1,0 +1,81 @@
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const User = require('./User');
+
+beforeEach(async () => {
+    await User.deleteMany({});
+});
+
+beforeAll(async () => {
+    await mongoose.connect('mongodb://localhost:27017/testDB');
+});
+
+afterAll(async () => {
+    await mongoose.connection.dropDatabase();
+    await mongoose.connection.close();
+});
+
+describe('User Model', () => {
+    describe('Password Encryption', () => {
+        it('should encrypt password before saving to database', async () => {
+            const userData = {
+                channelName: 'testuser',
+                email: 'test@example.com',
+                password: 'password123',
+            };
+
+            const user = new User(userData);
+            await user.save();
+
+            expect(user.password).not.toBe(userData.password);
+        });
+    });
+
+    describe('Match Password Method', () => {
+        it('should return true if passwords match', async () => {
+            const userData = {
+                channelName: 'testuser',
+                email: 'test@example.com',
+                password: 'password123',
+            };
+
+            const user = new User(userData);
+            await user.save();
+
+            const isMatch = await user.matchPassword('password123');
+            expect(isMatch).toBe(true);
+        });
+
+        it('should return false if passwords do not match', async () => {
+            const userData = {
+                channelName: 'testuser',
+                email: 'test@example.com',
+                password: 'password123',
+            };
+
+            const user = new User(userData);
+            await user.save();
+
+            const isMatch = await user.matchPassword('wrongpassword');
+            expect(isMatch).toBe(false);
+        });
+    });
+
+    // Test for JW-Token creation TODO: Check if there is another way
+    // describe('Get Signed JWT Token Method', () => {
+    //     it('should return a valid JWT token', () => {
+    //         const userData = {
+    //             _id: new mongoose.Types.ObjectId(),
+    //             channelName: 'testuser',
+    //             email: 'test@example.com',
+    //         };
+
+    //         const user = new User(userData);
+    //         const token = user.getSignedJwtToken();
+
+    //         const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    //         expect(decoded.id).toEqual(userData._id.toString());
+    //     });
+    // });
+});

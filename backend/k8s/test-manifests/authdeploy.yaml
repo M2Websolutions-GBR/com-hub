@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: auth
+  name: auth
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth
+  template:
+    metadata:
+      labels:
+        app: auth
+    spec:
+      containers:
+        - image: docker.io/jumpdaddy/com-hub-auth:1.0.2
+          imagePullPolicy: Always
+          resources:
+            requests:
+              cpu: 100m
+              memory: 100Mi
+            limits:
+              cpu: 100m
+              memory: 100Mi
+          env:
+            - name: NODE_ENV
+              value: "development"
+            - name: MONGO_URI
+              value: "mongodb://mongoadmin:secret@mongodb:27017/com-hub?authSource=admin"
+            - name: JWT_SECRET
+              value: "inxn76x7r8nit8rr3nzxitr83x7zrx38rr3xr8h3tr3x"
+            - name: JWT_EXPIRE
+              value: "30d"
+            - name: PORT
+              value: "3001"
+          name: auth
+          ports:
+            - containerPort: 3001
+              protocol: TCP
+      restartPolicy: Always
+
+---
+
+apiVersion: v1
+kind: Service 
+metadata:
+  name: auth
+spec:
+  selector:
+    app: auth
+  ports:
+    - name: "http"
+      port: 3001
+      targetPort: 3001

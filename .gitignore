@@ -1,0 +1,20 @@
+# root
+node_modules
+.env
+.DS_Store
+
+# auth
+*/Auth/node_modules
+*/Auth/.env
+
+# upload
+*/Upload/node_modules
+*/Upload/.env
+
+# SonarQube
+**/.scannerwork
+**/sonar-scanner*
+
+# Creds
+certs
+coverage
