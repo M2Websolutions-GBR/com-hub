@@ -1,0 +1,205 @@
+// const {
+//     getUsers,
+//     getUser,
+//     createUser,
+//     updateUser,
+//     deleteUser,
+// } = require('./users');
+// const User = require('../models/User');
+// const asyncHandler = require('@comhub/middleware/async');
+// const ErrorResponse = require('@comhub/middleware/errorResponse');
+
+// jest.mock('../models/User');
+// jest.mock('@comhub/middleware/async');
+// jest.mock('@comhub/middleware/errorResponse');
+
+// describe('Users Controller Tests', () => {
+//     afterEach(() => {
+//         jest.clearAllMocks();
+//     });
+
+//     describe('getUsers', () => {
+//         it('should get all users', async () => {
+//             const req = {};
+//             const res = {
+//                 status: jest.fn().mockReturnThis(),
+//                 json: jest.fn(),
+//             };
+//             const next = jest.fn();
+
+//             const mockUsers = [{ name: 'User 1' }, { name: 'User 2' }];
+//             const mockAdvancedResults = {
+//                 success: true,
+//                 count: mockUsers.length,
+//                 data: mockUsers,
+//             };
+
+//             asyncHandler.mockImplementation((fn) => fn(req, res, next));
+//             res.advancedResults = mockAdvancedResults;
+
+//             await getUsers(req, res, next);
+
+//             expect(res.status).toHaveBeenCalledWith(200);
+//             expect(res.json).toHaveBeenCalledWith(mockAdvancedResults);
+//         });
+//     });
+
+//     describe('getUser', () => {
+//         it('should get single user by id', async () => {
+//             const req = {
+//                 params: { id: 'testUserId' },
+//             };
+//             const res = {
+//                 status: jest.fn().mockReturnThis(),
+//                 json: jest.fn(),
+//             };
+//             const next = jest.fn();
+
+//             const mockUser = { _id: 'testUserId', name: 'Test User' };
+
+//             User.findById.mockResolvedValue(mockUser);
+
+//             await getUser(req, res, next);
+
+//             expect(User.findById).toHaveBeenCalledWith('testUserId');
+//             expect(res.status).toHaveBeenCalledWith(200);
+//             expect(res.json).toHaveBeenCalledWith({ success: true, data: mockUser });
+//         });
+
+//         it('should handle error if user not found', async () => {
+//             const req = {
+//                 params: { id: 'invalidUserId' },
+//             };
+//             const res = {
+//                 status: jest.fn().mockReturnThis(),
+//                 json: jest.fn(),
+//             };
+//             const next = jest.fn();
+
+//             User.findById.mockResolvedValue(null);
+
+//             await getUser(req, res, next);
+
+//             expect(User.findById).toHaveBeenCalledWith('invalidUserId');
+//             expect(next).toHaveBeenCalledWith(new ErrorResponse(`No user with that id of invalidUserId`));
+//         });
+//     });
+
+//     describe('createUser', () => {
+//         it('should create a new user', async () => {
+//             const req = {
+//                 body: { name: 'New User', email: 'newuser@example.com', password: 'password' },
+//             };
+//             const res = {
+//                 status: jest.fn().mockReturnThis(),
+//                 json: jest.fn(),
+//             };
+//             const next = jest.fn();
+
+//             const mockCreatedUser = { _id: 'newUserId', ...req.body };
+
+//             User.create.mockResolvedValue(mockCreatedUser);
+
+//             await createUser(req, res, next);
+
+//             expect(User.create).toHaveBeenCalledWith(req.body);
+//             expect(res.status).toHaveBeenCalledWith(201);
+//             expect(res.json).toHaveBeenCalledWith({ success: true, data: mockCreatedUser });
+//         });
+//     });
+
+//     describe('updateUser', () => {
+//         it('should update an existing user', async () => {
+//             const req = {
+//                 params: { id: 'testUserId' },
+//                 body: { name: 'Updated User' },
+//             };
+//             const res = {
+//                 status: jest.fn().mockReturnThis(),
+//                 json: jest.fn(),
+//             };
+//             const next = jest.fn();
+
+//             const mockUpdatedUser = { _id: 'testUserId', ...req.body };
+
+//             User.findByIdAndUpdate.mockResolvedValue(mockUpdatedUser);
+
+//             await updateUser(req, res, next);
+
+//             expect(User.findByIdAndUpdate).toHaveBeenCalledWith('testUserId', req.body, {
+//                 new: true,
+//                 runValidators: true,
+//                 context: 'query',
+//             });
+//             expect(res.status).toHaveBeenCalledWith(200);
+//             expect(res.json).toHaveBeenCalledWith({ success: true, data: mockUpdatedUser });
+//         });
+
+//         it('should handle error if user to update not found', async () => {
+//             const req = {
+//                 params: { id: 'invalidUserId' },
+//                 body: { name: 'Updated User' },
+//             };
+//             const res = {
+//                 status: jest.fn().mockReturnThis(),
+//                 json: jest.fn(),
+//             };
+//             const next = jest.fn();
+
+//             User.findByIdAndUpdate.mockResolvedValue(null);
+
+//             await updateUser(req, res, next);
+
+//             expect(User.findByIdAndUpdate).toHaveBeenCalledWith('invalidUserId', req.body, {
+//                 new: true,
+//                 runValidators: true,
+//                 context: 'query',
+//             });
+//             expect(next).toHaveBeenCalledWith(new ErrorResponse(`No user with that id of invalidUserId`));
+//         });
+//     });
+
+//     describe('deleteUser', () => {
+//         it('should delete an existing user', async () => {
+//             const req = {
+//                 params: { id: 'testUserId' },
+//             };
+//             const res = {
+//                 status: jest.fn().mockReturnThis(),
+//                 json: jest.fn(),
+//             };
+//             const next = jest.fn();
+
+//             const mockDeletedUser = { _id: 'testUserId' };
+
+//             User.findById.mockResolvedValue(mockDeletedUser);
+//             User.findByIdAndDelete.mockResolvedValue();
+
+//             await deleteUser(req, res, next);
+
+//             expect(User.findById).toHaveBeenCalledWith('testUserId');
+//             expect(User.findByIdAndDelete).toHaveBeenCalledWith('testUserId');
+//             expect(res.status).toHaveBeenCalledWith(200);
+//             expect(res.json).toHaveBeenCalledWith({ success: true, data: {} });
+//         });
+
+//         it('should handle error if user to delete not found', async () => {
+//             const req = {
+//                 params: { id: 'invalidUserId' },
+//             };
+//             const res = {
+//                 status: jest.fn().mockReturnThis(),
+//                 json: jest.fn(),
+//             };
+//             const next = jest.fn();
+
+//             User.findById.mockResolvedValue(null);
+
+//             await deleteUser(req, res, next);
+
+//             expect(User.findById).toHaveBeenCalledWith('invalidUserId');
+//             expect(next).toHaveBeenCalledWith(new ErrorResponse(`No user with that id of invalidUserId`));
+//         });
+//     });
+// });
+

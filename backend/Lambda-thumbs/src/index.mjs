@@ -8,19 +8,19 @@ const THUMBNAILS_TO_CREATE = 1;
 
 export const handler = async (event) => {
     await wipeTmpDirectory();
-	const { videoFileName, triggerBucketName } = extractParams(event);
-	const tmpVideoPath = await downloadVideoToTmpDirectory(triggerBucketName, videoFileName);
+    const { videoFileName, uploadsDir } = extractParams(event);
+    const tmpVideoPath = await downloadVideoToTmpDirectory(uploadsDir, videoFileName);
 
-	if (doesFileExist(tmpVideoPath)) {
-		await generateThumbnailsFromVideo(tmpVideoPath, THUMBNAILS_TO_CREATE, videoFileName);
-	}
+    if (doesFileExist(tmpVideoPath)) {
+        await generateThumbnailsFromVideo(tmpVideoPath, THUMBNAILS_TO_CREATE, videoFileName);
+    }
 };
 
 const extractParams = event => {
-	const videoFileName = decodeURIComponent(event.Records[0].s3.object.key).replace(/\+/g, " ");
-	const triggerBucketName = event.Records[0].s3.bucket.name;
-
-	return { videoFileName, triggerBucketName };
+    return {
+        videoFileName: event.videoFileName,
+        uploadsDir: event.uploadsDir || process.env.FILE_UPLOAD_PATH || path.resolve("../Video/public/uploads")
+    };
 };
 
 const wipeTmpDirectory = async () => {

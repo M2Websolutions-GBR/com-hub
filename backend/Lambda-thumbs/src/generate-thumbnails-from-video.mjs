@@ -1,13 +1,13 @@
 import fs from "fs";
-import { S3 } from "@aws-sdk/client-s3";
 import { spawnSync } from "child_process";
+import path from "path";
 import doesFileExist from "./does-file-exist.mjs";
 import generateTmpFilePath from "./generate-tmp-file-path.mjs";
 
 const ffprobePath = "/opt/nodejs/ffprobe";
 const ffmpegPath = "/opt/nodejs/ffmpeg";
 
-const THUMBNAIL_TARGET_BUCKET = "com-hub";
+const THUMBNAIL_OUTPUT_DIR = process.env.THUMBNAIL_OUTPUT_PATH || path.resolve("../Video/public/thumbnails");
 
 export default async (tmpVideoPath, numberOfThumbnails, videoFileName) => {
     const randomTimes = generateRandomTimes(tmpVideoPath, numberOfThumbnails);
@@ -17,7 +17,7 @@ export default async (tmpVideoPath, numberOfThumbnails, videoFileName) => {
 
         if (doesFileExist(tmpThumbnailPath)) {
             const nameOfImageToCreate = generateNameOfImageToUpload(videoFileName, index);
-            await uploadFileToS3(tmpThumbnailPath, nameOfImageToCreate);
+            await saveThumbnail(tmpThumbnailPath, nameOfImageToCreate);
         }
     }
 }
@@ -98,15 +98,8 @@ const generateNameOfImageToUpload = (videoFileName, i) => {
     return `thumbnails/${strippedExtension}-${i}.jpg`;
 };
 
-const uploadFileToS3 = async (tmpThumbnailPath, nameOfImageToCreate) => {
-    const contents = fs.createReadStream(tmpThumbnailPath);
-    const uploadParams = {
-        Bucket: THUMBNAIL_TARGET_BUCKET,
-        Key: nameOfImageToCreate,
-        Body: contents,
-        ContentType: "image/jpg"
-    };
-
-    const s3 = new S3();
-    await s3.putObject(uploadParams)
+const saveThumbnail = async (tmpThumbnailPath, nameOfImageToCreate) => {
+    const targetPath = path.join(THUMBNAIL_OUTPUT_DIR, path.basename(nameOfImageToCreate));
+    await fs.promises.mkdir(path.dirname(targetPath), { recursive: true });
+    await fs.promises.copyFile(tmpThumbnailPath, targetPath);
 };
