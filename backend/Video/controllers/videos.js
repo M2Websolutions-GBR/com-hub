@@ -24,7 +24,6 @@ exports.upload = async (req, res) => {
       return res.status(400).json({ message: "Kein File hochgeladen" });
     }
 
-    // Function to remove file extension
     const removeFileExtension = (filename) => {
       return filename.replace(/\.[^/.]+$/, "");
     };
@@ -39,17 +38,29 @@ exports.upload = async (req, res) => {
       description: req.body.description,
       status: req.body.status,
       key: key,
-      thumbnailUrl: path.join('thumbnails', thumbnailUrl),
+      thumbnailUrl: `http://localhost:3002/thumbnails/${path.basename(thumbnailUrl)}`
     });
 
     await video.save();
     console.log("✅ Video wurde in die DB gespeichert:", video);
+
+    // Dynamisch importieren und Thumbnail erstellen
+    try {
+      const { default: generateThumbnailsFromVideo } = await import("../Lambda-thumbs/src/generate-thumbnails-from-video.mjs");
+      const videoPath = path.join(process.env.FILE_UPLOAD_PATH || "./public/uploads", file.filename);
+      await generateThumbnailsFromVideo(videoPath, 1, file.filename);
+      console.log("Thumbnail erfolgreich erstellt für:", file.filename);
+    } catch (thumbnailErr) {
+      console.error("Fehler bei der Thumbnail-Erstellung:", thumbnailErr);
+    }
+
     res.send(video);
   } catch (err) {
     console.error("🚨 Fehler beim Speichern des Videos:", err);
     res.status(500).json({ message: 'Fehler beim Speichern in die DB', error: err });
   }
 };
+
 
 
 exports.uploadAvatar = async (req, res) => {
@@ -69,9 +80,9 @@ exports.uploadAvatar = async (req, res) => {
   const avatarPath = path.join(uploadDir, avatarFileName);
   fs.writeFileSync(avatarPath, file.buffer);
 
-  const fieldsToUpdate = {
-    avatarUrl: path.join('./uploads', avatarFileName),
-  };
+ const fieldsToUpdate = {
+  avatarUrl: `http://localhost:3002/uploads/${avatarFileName}`,
+};
   const user = await User.findByIdAndUpdate(req.user.id, fieldsToUpdate, {
     new: true,
     runValidators: true,

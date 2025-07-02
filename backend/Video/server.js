@@ -5,6 +5,7 @@ const db = require("./config/db");
 const cors = require("cors");
 const morgan = require("morgan");
 const client =require("prom-client");
+const path = require("path");
 
 
 require("dotenv").config();
@@ -65,6 +66,12 @@ const port = process.env.PORT || 3002;
 app.use(express.json());
 app.use(cors());
 app.use(bodyParser.json({ limit: '100mb' }));
+
+// Serve uploaded videos and generated thumbnails to the frontend
+const uploadsDir = process.env.FILE_UPLOAD_PATH || './public/uploads';
+const thumbnailsDir = process.env.THUMBNAIL_OUTPUT_PATH || './public/thumbnails';
+app.use('/uploads', express.static(path.join(__dirname, uploadsDir)));
+app.use('/thumbnails', express.static(path.join(__dirname, thumbnailsDir)));
 app.use("/api/videos", videoRoutes);
 
 
