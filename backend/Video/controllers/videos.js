@@ -42,7 +42,7 @@ exports.upload = async (req, res) => {
     });
 
     await video.save();
-    console.log("✅ Video wurde in die DB gespeichert:", video);
+    console.log("Video wurde in die DB gespeichert:", video);
 
     // Dynamisch importieren und Thumbnail erstellen
     try {
@@ -56,7 +56,7 @@ exports.upload = async (req, res) => {
 
     res.send(video);
   } catch (err) {
-    console.error("🚨 Fehler beim Speichern des Videos:", err);
+    console.error("Fehler beim Speichern des Videos:", err);
     res.status(500).json({ message: 'Fehler beim Speichern in die DB', error: err });
   }
 };
@@ -100,12 +100,17 @@ exports.stream = async (req, res) => {
   const id = req.params.id;
   const video = await Video.findById(id);
   if (!video) return res.status(404).send("Video not found.");
-  const filePath = path.join(uploadDir, video.key);
+
+  const filePath = path.resolve(uploadDir, video.key);
+  console.log("Streaming from path:", filePath);
+
   if (!fs.existsSync(filePath)) {
     return res.status(404).json({ error: 'File not found' });
   }
-  res.sendFile(path.resolve(filePath));
+
+  res.sendFile(filePath);
 };
+
 
 exports.delete = async (req, res) => {
   const id = req.params.id;
