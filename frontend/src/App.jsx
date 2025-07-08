@@ -12,6 +12,8 @@ import HistoryListView from "./views/HistoryListView";
 import HomeView from "./views/HomeView";
 import LandingView from "./views/LandingView";
 import LogInView from "./views/LogInView";
+import ForgotPasswordView from "./views/ForgotPasswordView";
+import ResetPasswordView from "./views/ResetPasswordView";
 import Navbar from "./components/NavBar";
 import PlayView from "./views/PlayView";
 import PrivateRoute from "./components/PrivateRoute";
@@ -37,6 +39,8 @@ function App() {
             <Routes>
               <Route path="/" element={<LandingView />} />
               <Route path="/login" element={<LogInView />} />
+              <Route path="/forgot-password" element={<ForgotPasswordView />} />
+              <Route path="/resetpassword/:token" element={<ResetPasswordView />} />
               <Route path="/register" element={<Register />} />
               <Route
                 path="/home"
