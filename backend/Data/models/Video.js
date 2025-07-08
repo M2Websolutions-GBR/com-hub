@@ -20,8 +20,8 @@ const VideoSchema = new Schema(
       type: Number,
       default: 0
     },
-    url: {
-      type: String
+    key: {
+      type: String,
     },
     status: {
       type: String,

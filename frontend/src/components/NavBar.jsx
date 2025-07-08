@@ -98,42 +98,40 @@ const Navbar = ({ setSearchResults }) => {
   };
 
   const handleNewVideo = (newVideo) => {
-    console.log("newVideo", newVideo);
+  console.log("newVideo", newVideo);
 
-    if (newVideo.status === "public") {
-      setPublicVideoData((prevData) => ({
-        ...prevData,
-        count: prevData.count + 1,
-        data: [newVideo, ...prevData.data],
-      }));
+  if (newVideo.status === "public") {
+    setPublicVideoData((prevData) => ({
+      count: (prevData?.count || 0) + 1,
+      data: [newVideo, ...(prevData?.data || [])],
+    }));
 
-      setTimeout(async () => {
-        try {
-          await VideoService.getAllPublicVideos(setPublicVideoData, 1);
-        } catch (error) {
-          console.error("Error fetching updated public videos:", error);
-        }
-      }, 3000); // 3 seconds delay
-    } else if (newVideo.status === "private") {
-      setPrivateVideoData((prevData) => ({
-        ...prevData,
-        count: prevData.count + 1,
-        data: [newVideo, ...prevData.data],
-      }));
+    setTimeout(async () => {
+      try {
+        await VideoService.getAllPublicVideos(setPublicVideoData, 1);
+      } catch (error) {
+        console.error("Error fetching updated public videos:", error);
+      }
+    }, 3000);
+  } else if (newVideo.status === "private") {
+    setPrivateVideoData((prevData) => ({
+      count: (prevData?.count || 0) + 1,
+      data: [newVideo, ...(prevData?.data || [])],
+    }));
 
-      setTimeout(async () => {
-        try {
-          const token = localStorage.getItem("token");
-          await VideoService.getAllPrivateVideos(setPrivateVideoData, 1, token);
-        } catch (error) {
-          console.error("Error fetching updated private videos:", error);
-        }
-      }, 3000); // 3 seconds delay
-    } else {
-      // Handle other types or fallback if needed
-      console.error("Unsupported video type:", newVideo.type);
-    }
-  };
+    setTimeout(async () => {
+      try {
+        const token = localStorage.getItem("token");
+        await VideoService.getAllPrivateVideos(setPrivateVideoData, 1, token);
+      } catch (error) {
+        console.error("Error fetching updated private videos:", error);
+      }
+    }, 3000);
+  } else {
+    console.error("Unsupported video type:", newVideo.status);
+  }
+};
+
 
   return (
     <nav className="bg-[#155e75] text-white p-4 shadow-md relative min-h-[72px] flex align-center mb-4">

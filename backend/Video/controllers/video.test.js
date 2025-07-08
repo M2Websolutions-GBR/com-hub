@@ -1,4 +1,3 @@
-const AWS = require('aws-sdk');
 const {
     upload,
     uploadAvatar,
@@ -9,7 +8,6 @@ const {
 const Video = require('../models/Video');
 const User = require('../models/User');
 
-jest.mock('aws-sdk');
 jest.mock('../models/Video');
 jest.mock('../models/User');
 
@@ -75,21 +73,11 @@ describe('Videos Controller Tests', () => {
                 json: jest.fn(),
             };
 
-            const mockData = {
-                Location: 'https://com-hub.s3.eu-central-1.amazonaws.com/avatars/avatar.jpg',
-            };
-            const mockUser = { _id: 'testUserId', avatarUrl: mockData.Location };
-
-            AWS.S3.mockImplementation(() => ({
-                upload: jest.fn().mockReturnThis(),
-                promise: jest.fn().mockResolvedValue(mockData),
-            }));
+            const mockUser = { _id: 'testUserId', avatarUrl: 'uploads/avatar.jpg' };
 
             User.findByIdAndUpdate.mockResolvedValue(mockUser);
 
             await uploadAvatar(req, res);
-
-            expect(AWS.S3).toHaveBeenCalledWith();
             expect(res.status).toHaveBeenCalledWith(200);
             expect(res.json).toHaveBeenCalledWith({ success: true, data: mockUser });
         });

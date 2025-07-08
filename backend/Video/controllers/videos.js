@@ -1,13 +1,9 @@
 const Video = require("../models/Video");
-const AWS = require("aws-sdk");
+const path = require("path");
+const fs = require("fs");
 const User = require("../models/User");
 
-AWS.config.update({
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  region: process.env.AWS_REGION
-});
-const s3 = new AWS.S3();
+const uploadDir = process.env.FILE_UPLOAD_PATH || "./public/uploads";
 
 const transformKeyToThumbnailUrl = (filename) => {
   console.log("filename", filename)
@@ -18,31 +14,54 @@ const transformKeyToThumbnailUrl = (filename) => {
 }
 
 exports.upload = async (req, res) => {
-  const file = req.file;
-  console.log("req", req.file);
-  // Function to remove file extension
-  const removeFileExtension = (filename) => {
-    return filename.replace(/\.[^/.]+$/, "");
-  };
-  console.log("file",file.originalname);
-  // Remove extension from original file name
-  const name = removeFileExtension(file.originalname);
-  
-  const key = file.key
-  const thumbnailUrl = transformKeyToThumbnailUrl(key);
+  try {
+    const file = req.file;
+    console.log("req.file:", file);
+    console.log("req.body:", req.body);
+    console.log("req.user:", req.user);
 
-  const video = new Video({
-    userId: req.user.id,
-    title: req.body.title || name,
-    description: req.body.description,
-    status: req.body.status,
-    key: key,
-    thumbnailUrl: `https://com-hub.s3.eu-central-1.amazonaws.com/thumbnails/${thumbnailUrl}`,
-  });
+    if (!file) {
+      return res.status(400).json({ message: "Kein File hochgeladen" });
+    }
 
-  await video.save();
-  res.send(video);
+    const removeFileExtension = (filename) => {
+      return filename.replace(/\.[^/.]+$/, "");
+    };
+
+    const name = removeFileExtension(file.originalname);
+    const key = file.filename;
+    const thumbnailUrl = transformKeyToThumbnailUrl(key);
+
+    const video = new Video({
+      userId: req.user.id,
+      title: req.body.title || name,
+      description: req.body.description,
+      status: req.body.status,
+      key: key,
+      thumbnailUrl: `http://localhost:3002/thumbnails/${path.basename(thumbnailUrl)}`
+    });
+
+    await video.save();
+    console.log("Video wurde in die DB gespeichert:", video);
+
+    // Dynamisch importieren und Thumbnail erstellen
+    try {
+      const { default: generateThumbnailsFromVideo } = await import("../Lambda-thumbs/src/generate-thumbnails-from-video.mjs");
+      const videoPath = path.join(process.env.FILE_UPLOAD_PATH || "./public/uploads", file.filename);
+      await generateThumbnailsFromVideo(videoPath, 1, file.filename);
+      console.log("Thumbnail erfolgreich erstellt für:", file.filename);
+    } catch (thumbnailErr) {
+      console.error("Fehler bei der Thumbnail-Erstellung:", thumbnailErr);
+    }
+
+    res.send(video);
+  } catch (err) {
+    console.error("Fehler beim Speichern des Videos:", err);
+    res.status(500).json({ message: 'Fehler beim Speichern in die DB', error: err });
+  }
 };
+
+
 
 exports.uploadAvatar = async (req, res) => {
   try {
@@ -57,20 +76,13 @@ exports.uploadAvatar = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Only image files are allowed!' });
     }
 
-  const s3Client = new AWS.S3();
-  const params = {
-    Bucket: process.env.BUCKET_NAME,
-    Key: `avatars/${Date.now().toString()}_${file.originalname}`,
-    Body: file.buffer,
-    ContentType: file.mimetype,
-    ACL: "private",
-  };
+  const avatarFileName = `avatar-${Date.now()}-${file.originalname}`;
+  const avatarPath = path.join(uploadDir, avatarFileName);
+  fs.writeFileSync(avatarPath, file.buffer);
 
-  const data = await s3Client.upload(params).promise();
-
-  const fieldsToUpdate = {
-    avatarUrl: data.Location,
-  };
+ const fieldsToUpdate = {
+  avatarUrl: `http://localhost:3002/uploads/${avatarFileName}`,
+};
   const user = await User.findByIdAndUpdate(req.user.id, fieldsToUpdate, {
     new: true,
     runValidators: true,
@@ -89,20 +101,16 @@ exports.stream = async (req, res) => {
   const video = await Video.findById(id);
   if (!video) return res.status(404).send("Video not found.");
 
-  const params = {
-    Bucket: process.env.BUCKET_NAME,
-    Key: video.key,
-    Expires: 3600 * 5 // URL expires in 5 hours (adjust as needed)
-  };
+  const filePath = path.resolve(uploadDir, video.key);
+  console.log("Streaming from path:", filePath);
 
-  s3.getSignedUrl('getObject', params, (err, url) => {
-    if (err) {
-      console.error('Error generating presigned URL:', err);
-      return res.status(500).json({ error: 'Error generating presigned URL' });
-    }
-    res.json({ video, url });
-  });
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ error: 'File not found' });
+  }
+
+  res.sendFile(filePath);
 };
+
 
 exports.delete = async (req, res) => {
   const id = req.params.id;
@@ -114,13 +122,10 @@ exports.delete = async (req, res) => {
       return res.status(404).json({ error: 'Video not found' });
     }
 
-    // Delete from AWS S3
-    const params = {
-      Bucket: process.env.BUCKET_NAME,
-      Key: video.key,
-    };
-    await s3.deleteObject(params).promise();
-
+    const filePath = path.join(uploadDir, video.key);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
     // Delete from MongoDB
     await Video.findByIdAndDelete(id);
 

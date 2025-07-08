@@ -28,21 +28,23 @@ export default function PlayView() {
     }
   };
 
-  const fetchVideoDetails = async () => {
+const fetchVideoDetails = async () => {
     const token = localStorage.getItem("token");
 
     try {
-      const response = await axios.get(
-        `${import.meta.env.VITE_API_URL_VIDEO}/api/videos/${id}/stream`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          }
-        }
+      // Fetch video metadata from the data service
+      const videoResponse = await axios.get(
+        `${import.meta.env.VITE_API_URL_DATA}/api/data/videos/${id}`
       );
-      setVideoData(response.data);
 
-      const userId = response.data.video.userId;
+      const video = videoResponse.data.data;
+
+      // Build streaming URL for the video service
+      const url = `${import.meta.env.VITE_API_URL_VIDEO}/uploads/${video.key}`;
+
+      setVideoData({ url, video });
+
+      const userId = video?.userId?.id || video?.userId?._id || video.userId;
       if (userId) {
         const userResponse = await ProfileService.getProfileById(userId);
         setChannelData(userResponse.data);
@@ -55,6 +57,8 @@ export default function PlayView() {
       setIsLoading(false);
     }
   };
+
+
 
   const handleAddHistory = async () => {
     try {
@@ -85,24 +89,33 @@ export default function PlayView() {
             </div>
           ) : (
             <>
-              <h2 className="m-4 text-2xl font-bold">{videoData.video.title}</h2>
-              <VideoCard videoData={videoData} ref={plyrRef} />
-              <div className="mt-6 m-4 px-4 py-4 bg-gray-100 shadow-lg rounded-lg flex items-start">
-                {channelData?.avatarUrl && (
-                  <Link to={`/channel/${channelData?.id}`} className="mr-4">
-                    <img src={channelData.avatarUrl} alt="Avatar" className="w-12 h-12 rounded-full" />
-                  </Link>
-                )}
-                <div className="flex-1">
-                  <Link to={`/channel/${channelData?.id}`} className="text-black block mb-2">
-                    {channelData?.channelName}
-                  </Link>
-                  <p className="text-gray-700 mb-4">{videoData.video.description}</p>
+              {videoData?.video ? (
+                <>
+                  <h2 className="m-4 text-2xl font-bold">{videoData.video.title}</h2>
+                  <VideoCard videoData={videoData} ref={plyrRef} />
+
+                  <div className="mt-6 m-4 px-4 py-4 bg-gray-100 shadow-lg rounded-lg flex items-start">
+                    {channelData?.avatarUrl && (
+                      <Link to={`/channel/${channelData.id}`} className="mr-4">
+                        <img src={channelData.avatarUrl} alt="Avatar" className="w-12 h-12 rounded-full" />
+                      </Link>
+                    )}
+                    <div className="flex-1">
+                      <Link to={`/channel/${channelData?.id}`} className="text-black block mb-2">
+                        {channelData?.channelName || "Unbekannter Kanal"}
+                      </Link>
+                      <p className="text-gray-700 mb-4">{videoData.video.description || "Keine Beschreibung vorhanden."}</p>
+                    </div>
+                    <div className="flex justify-end">
+                      <CreateFeelings videoId={id} />
+                    </div>
                   </div>
-                  <div className="flex justify-end">
-                    <CreateFeelings videoId={id} />
-                  </div>
+                </>
+              ) : (
+                <div className="flex justify-center items-center h-48">
+                  <p className="text-lg text-gray-600">Video wird geladen...</p>
                 </div>
+              )}
             </>
           )}
         </div>
@@ -110,4 +123,5 @@ export default function PlayView() {
       </div>
     </div>
   );
+
 }
