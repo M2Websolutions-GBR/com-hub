@@ -4,6 +4,7 @@ const morgan = require("morgan");
 const cookieParser = require("cookie-parser");
 const mongoSanitize = require("express-mongo-sanitize");
 const cors = require("cors");
+const helmet = require("helmet");
 const sharedMiddleware = require("@comhub/middleware");
 const authRoutes = require("./routes/auth");
 const errorHandler = require("@comhub/middleware/error");
@@ -65,6 +66,15 @@ app.get("/api/auth/metrics", async (req, res) => {
 app.use(bodyParser.json({ limit: '100mb' }));
 
 app.use(express.json());
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            imgSrc: ["'self'", 'data:', 'blob:']
+        }
+    },
+    crossOriginResourcePolicy: false
+}));
 app.use(cookieParser());
 app.use(sharedMiddleware);
 

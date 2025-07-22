@@ -1,4 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
+import { GoogleLogin } from "@react-oauth/google";
 
 import ProfileService from "../services/ProfileService";
 import axios from "axios";
@@ -62,6 +63,46 @@ const LogIn = () => {
     }
   };
 
+  const onGoogleSuccess = async (credentialResponse) => {
+    try {
+      const res = await axios.post(
+        `${import.meta.env.VITE_API_URL_AUTH}/api/auth/googlelogin`,
+        { tokenId: credentialResponse.credential },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (res && res.data) {
+        localStorage.setItem("token", res.data.token);
+        try {
+          const profile = await ProfileService.getProfile(
+            setAboutText,
+            setUserData,
+            setAvatarUrl
+          );
+          setUserData(profile);
+          toast.success("Logged in successfully!", {
+            theme: "colored",
+          });
+          navigate("/home");
+        } catch (profileError) {
+          console.error("Error fetching user profile:", profileError);
+          toast.error("Failed to fetch user profile.");
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Google login failed");
+    }
+  };
+
+  const onGoogleError = () => {
+    toast.error("Google login failed");
+  };
+
   return (
     <div className="flex items-center justify-center h-screen bg-gray-100">
       <div className="w-full max-w-md">
@@ -101,7 +142,7 @@ const LogIn = () => {
               placeholder="******************"
             />
           </div>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-4">
             <button
               type="submit"
               id="login-button"
@@ -112,7 +153,12 @@ const LogIn = () => {
             <Link to="/register" className="text-[#155e75] hover:text-cyan-600">
               Click here to register
             </Link>
-
+          </div>
+          <div className="flex flex-col items-center gap-2">
+            <Link to="/forgot-password" className="text-[#155e75] hover:text-cyan-600">
+              Forgot password?
+            </Link>
+            <GoogleLogin onSuccess={onGoogleSuccess} onError={onGoogleError} />
           </div>
         </form>
       </div>

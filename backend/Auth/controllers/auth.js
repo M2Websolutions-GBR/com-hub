@@ -1,5 +1,8 @@
 const asyncHandler = require("@comhub/middleware/async");
 const ErrorResponse = require("@comhub/middleware/errorResponse");
+const crypto = require('crypto');
+const { OAuth2Client } = require('google-auth-library');
+const sendEmail = require('../utils/sendEmail');
 
 const User = require("../models/User");
 
@@ -175,6 +178,106 @@ exports.updateChannelName = asyncHandler(async (req, res, next) => {
     console.error("Error updating channel name:", error);
     next(new ErrorResponse("Server error", 500));
   }
+});
+
+// @desc    Forgot password
+// @route   POST /api/auth/forgotpassword
+// @access  Public
+exports.forgotPassword = asyncHandler(async (req, res, next) => {
+  const email = req.body.email.toLowerCase();
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    return next(new ErrorResponse('Email not found', 404));
+  }
+
+  const resetToken = user.getResetPasswordToken();
+  await user.save({ validateBeforeSave: false });
+
+  const frontendUrl = process.env.FRONTEND_URL || `${req.protocol}://${req.get('host')}`;
+  const resetUrl = `${frontendUrl}/resetpassword/${resetToken}`;
+
+  try {
+    await sendEmail({
+      to: user.email,
+      subject: 'Password Reset',
+      text: `Please reset your password by visiting: ${resetUrl}`,
+    });
+    res.status(200).json({ success: true, data: 'Email sent' });
+  } catch (err) {
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+    await user.save({ validateBeforeSave: false });
+    next(new ErrorResponse('Email could not be sent', 500));
+  }
+});
+
+// @desc    Reset password
+// @route   PUT /api/auth/resetpassword/:resettoken
+// @access  Public
+exports.resetPassword = asyncHandler(async (req, res, next) => {
+  const resetPasswordToken = crypto
+    .createHash('sha256')
+    .update(req.params.resettoken)
+    .digest('hex');
+
+  const user = await User.findOne({
+    resetPasswordToken,
+    resetPasswordExpire: { $gt: Date.now() },
+  }).select('+password');
+
+  if (!user) {
+    return next(new ErrorResponse('Invalid token', 400));
+  }
+
+  user.password = req.body.password;
+  user.resetPasswordToken = undefined;
+  user.resetPasswordExpire = undefined;
+  await user.save();
+
+  sendTokenResponse(user, 200, res);
+});
+
+// @desc    Login with Google
+// @route   POST /api/auth/googlelogin
+// @access  Public
+exports.googleLogin = asyncHandler(async (req, res, next) => {
+  const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+  const { tokenId } = req.body;
+
+  const ticket = await client.verifyIdToken({
+    idToken: tokenId,
+    audience: process.env.GOOGLE_CLIENT_ID,
+  });
+
+  const { email_verified, email, name } = ticket.getPayload();
+
+  if (!email_verified) {
+    return next(new ErrorResponse('Google account not verified', 401));
+  }
+
+  const lowerEmail = email.toLowerCase();
+  let user = await User.findOne({ email: lowerEmail });
+
+  if (!user) {
+    let baseName = name.replace(/\s+/g, '').toLowerCase();
+    let channelName = baseName;
+    let suffix = 1;
+    while (await User.findOne({ channelName })) {
+      channelName = `${baseName}${suffix}`;
+      suffix += 1;
+    }
+
+    const randomPassword = crypto.randomBytes(20).toString('hex');
+
+    user = await User.create({
+      channelName,
+      email: lowerEmail,
+      password: randomPassword,
+    });
+  }
+
+  sendTokenResponse(user, 200, res);
 });
 
 // Get token from model, create cookie and send response
