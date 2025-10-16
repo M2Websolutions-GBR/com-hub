@@ -1,103 +1,81 @@
-🌐 com-hub
+# 🌐 com-hub
 
-com-hub ist eine moderne Plattform, die als zentrale Content-Upload- und Private-Space-Plattform entwickelt wurde.
-Das Projekt kombiniert Microservice-Architektur, Containerisierung mit Docker & Kubernetes sowie CI/CD-Pipelines über GitLab, um eine skalierbare und produktionsreife Lösung bereitzustellen.
+**com-hub** ist eine moderne Plattform für **Content-Upload** und **Private Spaces**.  
+Sie nutzt **Microservices**, **Docker/Kubernetes** und **GitLab CI/CD** für eine skalierbare, produktionsreife Bereitstellung.
 
-📂 Projektstruktur
+---
 
-Die wichtigsten Komponenten sind in getrennte Verzeichnisse organisiert:
+## 📂 Projektstruktur
 
-backend/ – REST-API, Middleware und Business-Logik
+- **backend/** – REST-API, Middleware, Business-Logik  
+- **frontend/** – React + Vite UI mit TailwindCSS  
+- **runner/** – GitLab CI/CD Runner-Definitionen  
+- **terraform/** – Infrastruktur als Code (Cloud-Deployment)  
+- **k8s/** – Kubernetes-Manifeste (Deployments, Ingress, ConfigMaps, Rolling Updates)  
+- **middleware/** – z. B. Auth, API-Gateway  
+- **Auth/**, **Data/**, **Video/**, **Lambda-thumbs/** – Authentifizierung, Datenhaltung, Videoverarbeitung, Thumbnail-Generierung  
 
-frontend/ – React + Vite basierte Benutzeroberfläche mit TailwindCSS
+Zusätzlich:
+- **docker-compose.yml** – lokale Entwicklungsumgebung  
+- **jest.config.js**, **jest.setup.js** – Testkonfiguration  
+- **.gitlab-ci.yml**, **tf.gitlab-ci.yml** – CI/CD-Pipelines
 
-runner/ – CI/CD Runner-Definitionen für GitLab
+---
 
-terraform/ – Infrastrukturautomatisierung mit Terraform (Cloud-Deployment)
+## ⚙️ Features
 
-k8s/ – Kubernetes-Manifeste für Deployment, Ingress, ConfigMaps etc.
+- **Auth-Service** → Registrierung, Login, JWT  
+- **Data-Service** → Persistenz & Verwaltung von App-Daten  
+- **Video-Service** → Upload, Verarbeitung, Auslieferung  
+- **Lambda-thumbs** → automatische Thumbnail-Erzeugung  
+- **Middleware** → API-Gateway, Versionierung, Request-Handling  
+- **Frontend** → moderne SPA mit React, Vite, TailwindCSS  
+- **CI/CD** → Build, Test, Deploy, Secrets-Checks via GitLab  
+- **IaC** → Terraform-Skripte für reproduzierbare Infrastruktur  
+- **Kubernetes** → Ingress, TLS, Rolling Updates, Skalierung
 
-middleware/ – zusätzliche Services, z. B. Authentifizierung und API-Gateway
+---
 
-Auth/, Data/, Video/, Lambda-thumbs/ – weitere Services zur Authentifizierung, Datenhaltung, Videomanagement und Thumbnail-Generierung
+## 🚀 Lokale Entwicklung
 
-Zusätzlich enthalten:
+**Voraussetzungen**
+- Docker & Docker Compose  
+- Node.js (für Frontend & Tests)  
+- GitLab Runner (optional, für lokale CI-Tests)
 
-docker-compose.yml – Lokale Entwicklungsumgebung
+**Start (Beispiel)**
+```bash
+# Repo klonen
+git clone <REPO_URL>
+cd com-hub
 
-Jest-Konfiguration – automatisierte Tests (jest.config.js, jest.setup.js)
-
-CI/CD-Konfiguration – .gitlab-ci.yml, tf.gitlab-ci.yml
-
-⚙️ Features
-
-Auth-Service → Benutzerregistrierung, Login, JWT-basierte Authentifizierung
-
-Data-Service → Speicherung und Verwaltung von Anwendungsdaten
-
-Video-Service → Upload, Verarbeitung und Bereitstellung von Videos
-
-Lambda-thumbs → Automatische Thumbnail-Generierung
-
-Middleware → API-Gateway, Versionierung & Request-Handling
-
-Frontend → Moderne Web-App mit React, TailwindCSS & Vite
-
-CI/CD-Pipeline → GitLab CI mit Build, Test, Deployment und Secrets-Check
-
-Infrastructure as Code → Terraform-Skripte für Cloud-Deployment
-
-Kubernetes-Support → Skalierbares Deployment mit Ingress & Rolling Updates
-
-🚀 Lokale Entwicklung
-Voraussetzungen
-
-Docker
- & Docker Compose
-
-Node.js
- (für Frontend & Tests)
-
-GitLab Runner (optional, für lokale CI-Tests)
-
+# Lokale Umgebung
+docker compose up --build
 🧪 Tests
-
-Unit- und Integrationstests sind mit Jest konfiguriert.
-
+bash
+Code kopieren
 npm run test
+```
 
-☁️ Deployment
+# 🔐 Sicherheit
+- CSRF- & CORS-Schutz
 
-Docker → Services werden als Container gebaut (1_build_image.sh)
+- Secrets-Checks in GitLab CI
 
-Push → Images können ins Registry hochgeladen werden (2_push_image.sh)
+- TLS über Ingress (HTTPS)
 
-Kubernetes → Rolling Updates (3_rolling_update.sh)
+# 📖 Dokumentation
+- frontend/README.md → Nutzer:innen-Doku
 
-Terraform → Automatisierte Bereitstellung von Infrastrukturkomponenten
+- terraform/ → IaC-Beispiele
 
-🔐 Sicherheit
+- k8s/ → Cluster-Deployments
 
-CSRF- und CORS-Schutz implementiert
+# 📅 Status
+- Aktuell: Plattform offline und von AWS getrennt
 
-GitLab CI prüft Secrets vor jedem Deployment
+- Letzte große Änderung: Migration auf Kubernetes + Terraform
 
-TLS aktiviert (Ingress + HTTPS)
+- Größe: ~516 Commits, 16 Branches
 
-📖 Dokumentation
-
-README.md im Frontend → Nutzer-Dokumentation
-
-terraform/ → IaC-Beispiele
-
-k8s/ → Cluster-Deployments
-
-📅 Status
-
-Aktueller Status: Plattform Offline und getrennt von AWS
-
-Letzte große Änderung: Umstellung auf Kubernetes + Terraform-Deployment
-
-Projektgröße: ~516 Commits, 16 Branches
-
-Speicher: ~127 MB
+- Repo-Speicher: ~127 MB
